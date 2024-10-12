@@ -40,11 +40,14 @@ namespace music_manager_starter.Server.Controllers
             _context.Songs.Add(song);
             await _context.SaveChangesAsync();
 
-            Console.WriteLine("New song added: " + song.Title);  // Server log
-            await _hubContext.Clients.All.SendAsync("ReceiveSongNotification", song.Title);
-            Console.WriteLine("Notification sent for song: " + song.Title);  // Server log
+            await SendSongNotification(song.Title);
 
             return Ok();
+        }
+
+        public async Task SendSongNotification(string songTitle)
+        {
+            await _hubContext.Clients.All.SendAsync("ReceiveSongNotification", songTitle);
         }
     }
 }
