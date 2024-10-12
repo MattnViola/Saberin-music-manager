@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using music_manager_starter.Data;
 using music_manager_starter.Data.Models;
+using music_manager_starter.Server.Hubs;
 using System;
 
 namespace music_manager_starter.Server.Controllers
@@ -11,10 +13,12 @@ namespace music_manager_starter.Server.Controllers
     public class SongsController : ControllerBase
     {
         private readonly DataDbContext _context;
+        private readonly IHubContext<SongHub> _hubContext;
 
-        public SongsController(DataDbContext context)
+        public SongsController(DataDbContext context, IHubContext<SongHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;            
         }
 
   
@@ -35,6 +39,8 @@ namespace music_manager_starter.Server.Controllers
 
             _context.Songs.Add(song);
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("SongNotification", song.Title);
 
             return Ok();
         }
