@@ -1,11 +1,8 @@
-﻿@using Microsoft.AspNetCore.SignalR.Client
-@inherits LayoutComponentBase
-
-@inject NavigationManager Navigation
-
+﻿@inherits LayoutComponentBase
 
 <div class="flex h-screen">
     <NavMenu />
+
     <div class="flex-1 flex flex-col bg-gray-800 md:ml-64 transition-all duration-300">
         <div class="top-bar px-6 py-4 bg-gray-900 text-white flex items-center justify-between">
             <h1 class="text-xl font-semibold">Music</h1>
@@ -17,8 +14,6 @@
             </div>
         </div>
 
-        <NotificationModal ShowModal="@showModal" ShowModalChanged="@OnShowModalChanged" Notifications="@songNotifications" />
-
         <div class="p-0 overflow-y-auto flex-1">
             @Body
         </div>
@@ -26,28 +21,4 @@
 </div>
 
 @code {
-    private HubConnection? hubConnection;
-    private List<string> songNotifications = new();
-    private bool showModal = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/songhub"))
-            .Build();
-
-        hubConnection.On<string>("ReceiveSongNotification", (songName) =>
-        {
-            songNotifications.Add($"New song added: {songName}");
-            showModal = true; 
-            StateHasChanged();  
-        });
-
-        await hubConnection.StartAsync();
-    }
-
-    private void OnShowModalChanged(bool value)
-    {
-        showModal = value;  
-    }
 }
