@@ -1,4 +1,7 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@inherits LayoutComponentBase
+
+@inject NavigationManager Navigation
 
 
 <div class="flex h-screen">
@@ -14,8 +17,37 @@
             </div>
         </div>
 
+        <NotificationModal ShowModal="@showModal" ShowModalChanged="@OnShowModalChanged" Notifications="@songNotifications" />
+
         <div class="p-0 overflow-y-auto flex-1">
             @Body
         </div>
     </div>
 </div>
+
+@code {
+    private HubConnection? hubConnection;
+    private List<string> songNotifications = new();
+    private bool showModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/songhub"))
+            .Build();
+
+        hubConnection.On<string>("ReceiveSongNotification", (songName) =>
+        {
+            songNotifications.Add($"New song added: {songName}");
+            showModal = true; 
+            StateHasChanged();  
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private void OnShowModalChanged(bool value)
+    {
+        showModal = value;  
+    }
+}
