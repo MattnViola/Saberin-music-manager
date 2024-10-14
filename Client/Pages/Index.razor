@@ -1,14 +1,31 @@
 ﻿@page "/"
 @using music_manager_starter.Shared
-
+@using Microsoft.AspNetCore.WebUtilities
 @inject HttpClient Http
+@inject NavigationManager Navigation
 
 @code {
     private List<Song> songs;
+    private string searchQuery = "";
+    private string selectedFilter = "All";
 
     protected override async Task OnInitializedAsync()
     {
-        songs = await Http.GetFromJsonAsync<List<Song>>("api/songs");
+        var uri = new Uri(Navigation.Uri);
+        var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+        if (queryParams.TryGetValue("filter", out var filter))
+        {
+            selectedFilter = filter;
+        }
+
+        if (queryParams.TryGetValue("query", out var query))
+        {
+            searchQuery = query;
+        }
+
+        // Make the API call with filter and query
+        songs = await Http.GetFromJsonAsync<List<Song>>($"api/songs?filter={selectedFilter}&query={searchQuery}");
     }
 }
 
@@ -22,7 +39,6 @@
                 <div class="glass p-6 border border-gray-300 rounded-lg text-white transition-transform transform hover:scale-105 hover:shadow-xl cursor-pointer">
                     <h3 class="text-xl font-semibold mb-2">@song.Title</h3>
                     <p class="text-md">Artist: <span class="font-light">@song.Artist</span></p>
-
                 </div>
             }
         }
@@ -41,14 +57,12 @@
         font-family: 'Rajdhani', sans-serif;
     }
 
- 
-
     .glass {
         background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px); 
-        border-radius: 10px; 
-        position: relative; 
-        overflow: hidden; 
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        position: relative;
+        overflow: hidden;
     }
 
         .glass:before {
@@ -60,6 +74,6 @@
             bottom: 0;
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
-            pointer-events: none; 
+            pointer-events: none;
         }
 </style>

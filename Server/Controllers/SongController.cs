@@ -21,11 +21,35 @@ namespace music_manager_starter.Server.Controllers
             _hubContext = hubContext;            
         }
 
-  
+
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Song>>> GetSongs()
+        public async Task<ActionResult<IEnumerable<Song>>> GetSongs([FromQuery] string filter = "All", [FromQuery] string query = "")
         {
-            return await _context.Songs.ToListAsync();
+            IQueryable<Song> songsQuery = _context.Songs;
+
+            if (!string.IsNullOrEmpty(query))
+            {
+                query = query.ToLower();
+                switch (filter)
+                {
+                    case "Title":
+                        songsQuery = songsQuery.Where(s => s.Title.ToLower().Contains(query));
+                        break;
+                    case "Artist":
+                        songsQuery = songsQuery.Where(s => s.Artist.ToLower().Contains(query));
+                        break;
+                    case "Album":
+                        songsQuery = songsQuery.Where(s => s.Album.ToLower().Contains(query));
+                        break;
+                    default:
+                        songsQuery = songsQuery.Where(s => s.Title.ToLower().Contains(query)
+                                                        || s.Artist.ToLower().Contains(query)
+                                                        || s.Album.ToLower().Contains(query));
+                        break;
+                }
+            }
+
+            return Ok(await songsQuery.ToListAsync());
         }
 
         [HttpPost]
