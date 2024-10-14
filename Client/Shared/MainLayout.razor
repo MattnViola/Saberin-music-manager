@@ -1,16 +1,29 @@
 ﻿@inherits LayoutComponentBase
 
+@inject NavigationManager Navigation
+
 <div class="flex h-screen">
     <NavMenu />
 
     <div class="flex-1 flex flex-col bg-gray-800 md:ml-64 transition-all duration-300">
         <div class="top-bar px-6 py-4 bg-gray-900 text-white flex items-center justify-between">
             <h1 class="text-xl font-semibold">Music</h1>
-            <div class="relative">
-                <input type="text" placeholder="Search..." class="bg-gray-700 text-white px-4 py-2 rounded-full focus:outline-none">
-                <span class="absolute right-3 top-3 text-gray-400">
-                    <i class="fas fa-search"></i>
-                </span>
+
+            <div class="flex items-center space-x-4">
+                <label for="filter" class="text-gray-400">Filter by:</label>
+                <select id="filter" @onchange="HandleFilterChange" class="bg-gray-700 text-white ml-2 mr-4 py-1 px-2 rounded-lg min-w-[120px]">
+                    <option value="All">All</option>
+                    <option value="Title">Title</option>
+                    <option value="Artist">Artist</option>
+                    <option value="Album">Album</option>
+                </select>
+
+                <div class="relative flex-grow mx-2">
+                    <input @bind="searchQuery" @onkeydown="HandleSearchKeyDown" type="text" placeholder="Search..." class="bg-gray-700 text-white px-4 py-2 rounded-full w-full focus:outline-none">
+                    <span class="absolute right-3 top-3 text-gray-400">
+                        <i class="fas fa-search"></i>
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -21,4 +34,22 @@
 </div>
 
 @code {
+    private string searchQuery = "";
+    private string selectedFilter = "All";
+
+    private void HandleFilterChange(ChangeEventArgs e)
+    {
+        selectedFilter = e.Value.ToString();
+    }
+
+    private void HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            // Navigate to the index page with the filter and query parameters
+            var url = $"/?filter={selectedFilter}&query={searchQuery}";
+            Navigation.NavigateTo(url);
+        }
+    }
 }
+
