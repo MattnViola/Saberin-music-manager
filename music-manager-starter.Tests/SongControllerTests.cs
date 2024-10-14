@@ -3,11 +3,8 @@ using Moq;
 using music_manager_starter.Server.Controllers;
 using music_manager_starter.Server.Hubs;
 using music_manager_starter.Data;
-using music_manager_starter.Data.Models;
-using Xunit;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace music_manager_starter.Tests
 {
@@ -25,13 +22,14 @@ namespace music_manager_starter.Tests
             var mockHubContext = new Mock<IHubContext<SongHub>>();
             var mockClients = new Mock<IHubClients>();
             var mockClientProxy = new Mock<IClientProxy>();
+            var mockLogger = new Mock<ILogger<SongsController>>();
 
             mockHubContext.Setup(hub => hub.Clients).Returns(mockClients.Object);
             mockClients.Setup(clients => clients.All).Returns(mockClientProxy.Object);
 
 
             // Post Setup
-            var songsController = new SongsController(mockDbContext.Object, mockHubContext.Object);
+            var songsController = new SongsController(mockDbContext.Object, mockHubContext.Object, mockLogger.Object);
             await songsController.SendSongNotification("Test Song");
 
 
