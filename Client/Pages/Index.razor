@@ -31,49 +31,88 @@
 
 <div class="p-0 min-h-screen bg-pattern flex flex-col items-center justify-center">
     <h2 class="text-3xl font-bold text-white mb-8 text-center">Song Library</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+    <div class="accordion w-full max-w-4xl space-y-4">
         @if (songs != null && songs.Count > 0)
         {
             @foreach (var song in songs)
             {
-                <div class="glass p-6 border border-gray-300 rounded-lg text-white transition-transform transform hover:scale-105 hover:shadow-xl cursor-pointer">
-                    <h3 class="text-xl font-semibold mb-2">@song.Title</h3>
-                    <p class="text-md">Artist: <span class="font-light">@song.Artist</span></p>
+                <div class="accordion-item">
+                    <div class="accordion-header bg-gray-700 p-4 rounded-lg cursor-pointer text-white flex justify-between items-center" @onclick="() => ToggleSong(song)">
+                        <div>
+                            <h3 class="text-xl font-semibold">@song.Title</h3>
+                            <p class="text-md">Artist: <span class="font-light">@song.Artist</span></p>
+                        </div>
+                        <!-- Icon that changes based on expansion state -->
+                        <span class="text-2xl">
+                            @if (expandedSong == song)
+                            {
+                                <i class="fas fa-chevron-up"></i> <!-- Icon for expanded state -->
+                            }
+                            else
+                            {
+                                <i class="fas fa-chevron-down"></i> <!-- Icon for collapsed state -->
+                            }
+                        </span>
+                    </div>
+                    @if (expandedSong == song)
+                    {
+                        <div class="accordion-body bg-gray-800 p-4 rounded-lg text-white">
+                            <p><strong>Album:</strong> @song.Album</p>
+                            <p><strong>Genre:</strong> @song.Genre</p>
+                        </div>
+                    }
                 </div>
             }
         }
         else
         {
-            <div class="col-span-1 text-center text-gray-400">No songs found.</div>
+            <div class="text-center text-gray-400">No songs found.</div>
         }
     </div>
 </div>
 
+@code {
+    private Song expandedSong = null;
+
+    private void ToggleSong(Song song)
+    {
+        if (expandedSong == song)
+        {
+            expandedSong = null; // Collapse if the same song is clicked
+        }
+        else
+        {
+            expandedSong = song; // Expand the clicked song
+        }
+    }
+}
+
 <style>
+    .accordion-item {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+
+        .accordion-item:hover {
+            transform: scale(1.03);
+        }
+
+    .accordion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .accordion-body {
+        padding-top: 1rem;
+    }
+
     .bg-pattern {
         background: linear-gradient( rgba(31, 41, 55, 0.7), rgba(31, 41, 55, 0.7) ), url('dalle.webp');
         background-size: cover;
         background-position: center;
         font-family: 'Rajdhani', sans-serif;
     }
-
-    .glass {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 10px;
-        position: relative;
-        overflow: hidden;
-    }
-
-        .glass:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            pointer-events: none;
-        }
 </style>
