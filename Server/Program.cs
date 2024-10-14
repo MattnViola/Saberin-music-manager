@@ -6,7 +6,7 @@ using System.Security.AccessControl;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+
 
 builder.Services.AddDbContext<DataDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
@@ -29,18 +29,13 @@ else
     app.UseHsts();
 }
 
-
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.EnvironmentName.Equals("Testing"))
 {
-
-    var path = "App_Data";
-
-    if (!Path.Exists(path)) Directory.CreateDirectory(path);
-    var dbContext = scope.ServiceProvider.GetRequiredService<DataDbContext>();
-
-
-    dbContext.Database.Migrate();
-
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<DataDbContext>();
+        dbContext.Database.Migrate();
+    }
 }
 
 app.UseHttpsRedirection();
@@ -57,3 +52,6 @@ app.MapHub<SongHub>("/songhub");
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+// Added this to expose it to integration tests.
+public partial class Program { }
