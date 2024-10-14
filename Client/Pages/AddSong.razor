@@ -29,13 +29,11 @@
             <InputText @bind-Value="newSong.Genre" class="mt-1 block w-full p-2 border rounded" />
         </div>
 
-        <!-- Release Date Input -->
         <div class="mb-4">
             <label class="block text-gray-200">Release Date</label>
             <InputDate @bind-Value="newSong.ReleaseDate" class="mt-1 block w-full p-2 border rounded" />
         </div>
 
-        <!-- Album Cover Art Upload -->
         <div class="mb-4">
             <label class="block text-gray-200">Album Cover Art</label>
             <InputFile OnChange="HandleFileSelected" />
@@ -44,7 +42,7 @@
         <!-- File Name Display -->
         @if (!string.IsNullOrEmpty(fileName))
         {
-                <div class="text-white mt-2 mb-4"> <!-- Added bottom margin here -->
+                <div class="text-white mt-2 mb-4">
                 @fileName uploaded!
                 </div>
         }
@@ -66,14 +64,14 @@
 
     private async Task HandleValidSubmit()
     {
-        newSong.AlbumCoverArt = albumCoverArt; // Attach the album cover art
+        newSong.AlbumCoverArt = albumCoverArt; 
         var response = await Http.PostAsJsonAsync("api/songs", newSong);
         if (response.IsSuccessStatusCode)
         {
             message = "Song added successfully!";
             newSong = new Song();
-            albumCoverArt = null; // Reset the album art after successful submission
-            fileName = null; // Reset the file name after submission
+            albumCoverArt = null; 
+            fileName = null; 
         }
         else
         {
@@ -86,7 +84,7 @@
         var file = e.File;
         var buffer = new byte[file.Size];
         await file.OpenReadStream().ReadAsync(buffer);
-        albumCoverArt = buffer; // Store the uploaded file as a byte array
-        fileName = $"{file.Name}"; // Store the file name to display it in the format filename.format uploaded!
+        albumCoverArt = buffer; 
+        fileName = $"{file.Name}"; 
     }
 }

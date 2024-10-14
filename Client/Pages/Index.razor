@@ -8,11 +8,25 @@
     private List<Song> songs;
     private string searchQuery = "";
     private string selectedFilter = "All";
+    private Guid? expandedSongId = null;
+    private Guid songIdToUpload;
+
+    private void ToggleAccordion(Guid songId)
+    {
+        if (expandedSongId == songId)
+        {
+            expandedSongId = null;
+        }
+        else
+        {
+            expandedSongId = songId;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         var uri = new Uri(Navigation.Uri);
-        var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        var queryParams = QueryHelpers.ParseQuery(uri.Query);
 
         if (queryParams.TryGetValue("filter", out var filter))
         {
@@ -24,41 +38,74 @@
             searchQuery = query;
         }
 
-        // Make the API call with filter and query
         songs = await Http.GetFromJsonAsync<List<Song>>($"api/songs?filter={selectedFilter}&query={searchQuery}");
+    }
+
+    private void TriggerFileUpload(Guid songId)
+    {
+        songIdToUpload = songId;
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream().ReadAsync(buffer);
+
+        var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(buffer);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+
+        content.Add(fileContent, "albumArt", file.Name);
+
+        var response = await Http.PostAsync($"api/songs/{songIdToUpload}/upload-album-art", content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await OnInitializedAsync();
+        }
     }
 }
 
 <div class="p-0 min-h-screen bg-pattern flex flex-col items-center justify-center">
     <h2 class="text-3xl font-bold text-white mb-8 text-center">Song Library</h2>
-    <div class="accordion w-full max-w-4xl space-y-4">
+
+    <div class="w-full max-w-4xl">
         @if (songs != null && songs.Count > 0)
         {
             @foreach (var song in songs)
             {
-                <div class="accordion-item">
-                    <div class="accordion-header bg-gray-700 p-4 rounded-lg cursor-pointer text-white flex justify-between items-center" @onclick="() => ToggleSong(song)">
+                <div class="accordion-item mb-4">
+                    <button @onclick="() => ToggleAccordion(song.Id)" class="accordion-header w-full text-left text-white bg-gray-700 p-4 rounded-lg flex items-center justify-between">
                         <div>
                             <h3 class="text-xl font-semibold">@song.Title</h3>
                             <p class="text-md">Artist: <span class="font-light">@song.Artist</span></p>
                         </div>
-                        <!-- Icon that changes based on expansion state -->
-                        <span class="text-2xl">
-                            @if (expandedSong == song)
-                            {
-                                <i class="fas fa-chevron-up"></i> <!-- Icon for expanded state -->
-                            }
-                            else
-                            {
-                                <i class="fas fa-chevron-down"></i> <!-- Icon for collapsed state -->
-                            }
-                        </span>
-                    </div>
-                    @if (expandedSong == song)
+                        <i class="fas @(expandedSongId == song.Id ? "fa-chevron-up" : "fa-chevron-down")"></i>
+                    </button>
+
+                    @if (expandedSongId == song.Id)
                     {
-                        <div class="accordion-body bg-gray-800 p-4 rounded-lg text-white">
-                            <p><strong>Album:</strong> @song.Album</p>
-                            <p><strong>Genre:</strong> @song.Genre</p>
+                        <div class="accordion-content p-4 bg-gray-800 rounded-lg mt-2 flex">
+                            <div class="flex-shrink-0 mr-6">
+                                @if (song.AlbumCoverArt != null && song.AlbumCoverArt.Length > 0)
+                                {
+                                    <img src="data:image/jpeg;base64,@Convert.ToBase64String(song.AlbumCoverArt)" alt="Album Cover" class="w-32 h-32 object-cover rounded-lg" />
+                                }
+                                else
+                                {
+                                    <label for="@($"file-upload-{song.Id}")" class="w-32 h-32 bg-gray-600 flex items-center justify-center rounded-lg cursor-pointer" @onclick="() => TriggerFileUpload(song.Id)">
+                                        <i class="fas fa-plus text-white text-3xl"></i>
+                                    </label>
+                                    <InputFile id="@($"file-upload-{song.Id}")" OnChange="HandleFileSelected" class="hidden" />
+                                }
+                            </div>
+
+                            <div class="flex-1 text-white">
+                                <p><strong>Album:</strong> @song.Album</p>
+                                <p><strong>Genre:</strong> @song.Genre</p>
+                                <p><strong>Release Date:</strong> @(song.ReleaseDate.HasValue ? song.ReleaseDate.Value.ToString("MMMM dd, yyyy") : "N/A")</p>
+                            </div>
                         </div>
                     }
                 </div>
@@ -66,53 +113,52 @@
         }
         else
         {
-            <div class="text-center text-gray-400">No songs found.</div>
+            <div class="col-span-1 text-center text-gray-400">No songs found.</div>
         }
     </div>
 </div>
 
-@code {
-    private Song expandedSong = null;
-
-    private void ToggleSong(Song song)
-    {
-        if (expandedSong == song)
-        {
-            expandedSong = null; // Collapse if the same song is clicked
-        }
-        else
-        {
-            expandedSong = song; // Expand the clicked song
-        }
-    }
-}
-
 <style>
-    .accordion-item {
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-        overflow: hidden;
-        transition: transform 0.3s ease;
-    }
-
-        .accordion-item:hover {
-            transform: scale(1.03);
-        }
-
-    .accordion-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .accordion-body {
-        padding-top: 1rem;
-    }
-
     .bg-pattern {
-        background: linear-gradient( rgba(31, 41, 55, 0.7), rgba(31, 41, 55, 0.7) ), url('dalle.webp');
+        background: linear-gradient(rgba(31, 41, 55, 0.7), rgba(31, 41, 55, 0.7)), url('dalle.webp');
         background-size: cover;
         background-position: center;
         font-family: 'Rajdhani', sans-serif;
     }
+
+    .accordion-item {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+    }
+
+    .accordion-header {
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+        .accordion-header:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+    .accordion-content {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    img {
+        width: 128px;
+        height: 128px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .hidden {
+        display: none;
+    }
 </style>
+
+
+
+
+

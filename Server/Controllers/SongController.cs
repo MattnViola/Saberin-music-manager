@@ -95,6 +95,49 @@ namespace music_manager_starter.Server.Controllers
             }
         }
 
+
+        [HttpPost("{id}/upload-album-art")]
+        public async Task<IActionResult> UploadAlbumArt(Guid id, IFormFile albumArt)
+        {
+            _logger.LogInformation("Received request to upload album cover art for song ID {SongId}", id);
+
+            if (albumArt == null || albumArt.Length == 0)
+            {
+                _logger.LogWarning("No album art was uploaded for song ID {SongId}", id);
+                return BadRequest("No file was uploaded.");
+            }
+
+            var song = await _context.Songs.FindAsync(id);
+
+            if (song == null)
+            {
+                _logger.LogWarning("Song with ID {SongId} not found", id);
+                return NotFound("Song not found.");
+            }
+
+            try
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await albumArt.CopyToAsync(memoryStream);
+                    song.AlbumCoverArt = memoryStream.ToArray();
+                }
+
+                _context.Songs.Update(song);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Successfully uploaded album cover art for song '{Title}' by '{Artist}'", song.Title, song.Artist);
+
+                return Ok("Album art uploaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while uploading album art for song '{Title}'", song.Title);
+                return StatusCode(500, "An error occurred while uploading the album art.");
+            }
+        }
+
+
         public async Task SendSongNotification(string songTitle)
         {
             try
