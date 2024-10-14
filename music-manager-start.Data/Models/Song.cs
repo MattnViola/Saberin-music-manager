@@ -16,5 +16,7 @@ namespace music_manager_starter.Data.Models
         public string Artist { get; set; }
         public string Album { get; set; }
         public string Genre { get; set; }
+        public DateTime? ReleaseDate { get; set; }
+        public byte[]? AlbumCoverArt { get; set; }
     }
 }
