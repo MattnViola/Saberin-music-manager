@@ -16,7 +16,6 @@ namespace music_manager_starter.Server.Controllers
         private readonly IHubContext<SongHub> _hubContext;
         private readonly ILogger<SongsController> _logger;
 
-
         public SongsController(DataDbContext context, IHubContext<SongHub> hubContext, ILogger<SongsController> logger)
         {
             _context = context;
@@ -24,39 +23,47 @@ namespace music_manager_starter.Server.Controllers
             _logger = logger;
         }
 
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Song>>> GetSongs([FromQuery] string filter = "All", [FromQuery] string query = "")
         {
-
             _logger.LogInformation("Fetching songs with filter {Filter} and query {Query}", filter, query);
-            IQueryable<Song> songsQuery = _context.Songs;
 
-            if (!string.IsNullOrEmpty(query))
+            try
             {
-                query = query.ToLower();
-                switch (filter)
-                {
-                    case "Title":
-                        songsQuery = songsQuery.Where(s => s.Title.ToLower().Contains(query));
-                        break;
-                    case "Artist":
-                        songsQuery = songsQuery.Where(s => s.Artist.ToLower().Contains(query));
-                        break;
-                    case "Album":
-                        songsQuery = songsQuery.Where(s => s.Album.ToLower().Contains(query));
-                        break;
-                    default:
-                        songsQuery = songsQuery.Where(s => s.Title.ToLower().Contains(query)
-                                                        || s.Artist.ToLower().Contains(query)
-                                                        || s.Album.ToLower().Contains(query));
-                        break;
-                }
-            }
-            var result = await songsQuery.ToListAsync();
-            _logger.LogInformation("{Count} songs found", result.Count);
+                IQueryable<Song> songsQuery = _context.Songs;
 
-            return Ok(result);
+                if (!string.IsNullOrEmpty(query))
+                {
+                    query = query.ToLower();
+                    switch (filter)
+                    {
+                        case "Title":
+                            songsQuery = songsQuery.Where(s => s.Title.ToLower().Contains(query));
+                            break;
+                        case "Artist":
+                            songsQuery = songsQuery.Where(s => s.Artist.ToLower().Contains(query));
+                            break;
+                        case "Album":
+                            songsQuery = songsQuery.Where(s => s.Album.ToLower().Contains(query));
+                            break;
+                        default:
+                            songsQuery = songsQuery.Where(s => s.Title.ToLower().Contains(query)
+                                                            || s.Artist.ToLower().Contains(query)
+                                                            || s.Album.ToLower().Contains(query));
+                            break;
+                    }
+                }
+
+                var result = await songsQuery.ToListAsync();
+                _logger.LogInformation("{Count} songs found", result.Count);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching songs with filter {Filter} and query {Query}", filter, query);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
         }
 
         [HttpPost]
@@ -90,7 +97,15 @@ namespace music_manager_starter.Server.Controllers
 
         public async Task SendSongNotification(string songTitle)
         {
-            await _hubContext.Clients.All.SendAsync("ReceiveSongNotification", songTitle);
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("ReceiveSongNotification", songTitle);
+                _logger.LogInformation("Successfully sent song notification for '{Title}'", songTitle);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while sending notification for the song '{Title}'", songTitle);
+            }
         }
     }
 }
