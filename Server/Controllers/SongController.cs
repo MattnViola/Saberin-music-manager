@@ -14,17 +14,22 @@ namespace music_manager_starter.Server.Controllers
     {
         private readonly DataDbContext _context;
         private readonly IHubContext<SongHub> _hubContext;
+        private readonly ILogger<SongsController> _logger;
 
-        public SongsController(DataDbContext context, IHubContext<SongHub> hubContext)
+
+        public SongsController(DataDbContext context, IHubContext<SongHub> hubContext, ILogger<SongsController> logger)
         {
             _context = context;
-            _hubContext = hubContext;            
+            _hubContext = hubContext;
+            _logger = logger;
         }
 
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Song>>> GetSongs([FromQuery] string filter = "All", [FromQuery] string query = "")
         {
+
+            _logger.LogInformation("Fetching songs with filter {Filter} and query {Query}", filter, query);
             IQueryable<Song> songsQuery = _context.Songs;
 
             if (!string.IsNullOrEmpty(query))
@@ -48,25 +53,39 @@ namespace music_manager_starter.Server.Controllers
                         break;
                 }
             }
+            var result = await songsQuery.ToListAsync();
+            _logger.LogInformation("{Count} songs found", result.Count);
 
-            return Ok(await songsQuery.ToListAsync());
+            return Ok(result);
         }
 
         [HttpPost]
         public async Task<ActionResult<Song>> PostSong(Song song)
         {
+            _logger.LogInformation("Received request to add a new song");
+
             if (song == null)
             {
+                _logger.LogWarning("Received a null song in the request");
                 return BadRequest("Song cannot be null.");
             }
 
+            try
+            {
+                _context.Songs.Add(song);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Song '{Title}' by '{Artist}' added to the database", song.Title, song.Artist);
 
-            _context.Songs.Add(song);
-            await _context.SaveChangesAsync();
+                await SendSongNotification(song.Title);
+                _logger.LogInformation("Notification sent for the song '{Title}'", song.Title);
 
-            await SendSongNotification(song.Title);
-
-            return Ok();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while adding the song '{Title}'", song.Title);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
         }
 
         public async Task SendSongNotification(string songTitle)
