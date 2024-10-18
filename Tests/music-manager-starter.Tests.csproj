@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>music_manager_starter.Tests</RootNamespace>
+	<AssemblyName>Tests</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -31,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\music-manager-start.Data\music-manager-start.Data.csproj" />
+    <ProjectReference Include="..\Data\music-manager-start.Data.csproj" />
     <ProjectReference Include="..\Server\music-manager-starter.Server.csproj" />
     <ProjectReference Include="..\Shared\music-manager-starter.Shared.csproj" />
   </ItemGroup>

@@ -31,7 +31,7 @@ better placed as a client size filtering.
 
 ### 2. Error Handling and Conventions
 There are now multiple try-catch statements in the Controller and program.cs. As for conventions, 
-I only turned the App_Data folder into AppData. 
+I turned the App_Data folder into AppData, as well as turning the music-manager-starter.Data folder into Data. 
 
 ### 3. Logging
 Serilog is implemented in most server-side functions. Logs are flushed to console, as well as a daily log in /Logs.
